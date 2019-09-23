@@ -31,7 +31,6 @@ install:
     fi
 
 script:
-  - if [ "$LANGUAGE" == "Rust" ]; then make; fi
   - if [ "$LANGUAGE" == "Rust" ]; then cargo build --verbose; fi
   - if [ "$LANGUAGE" == "Rust" ]; then cargo test  --verbose; fi
   - if [ "$LANGUAGE" == "Rust" ] && [ "$CLIPPY_INSTALLED" == 1 ]; then cargo clippy; fi
