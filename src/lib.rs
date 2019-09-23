@@ -3,6 +3,12 @@
 //! This library implements streaming owoification.
 //!
 //! Get the binary on [Crates.io](https://crates.io/crates/wustc)!
+//!
+//! # Special thanks
+//!
+//! To all who support further development on [Patreon](https://patreon.com/nabijaczleweli), in particular:
+//!
+//!   * ThePhD
 
 
 use std::io::{Result as IoResult, Write, Read};
