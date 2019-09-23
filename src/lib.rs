@@ -1,3 +1,10 @@
+//! [Exampwe of ewwonyenyonyuns code:](https://twitter.com/plaidfinch/status/1176637387511934976)
+//!
+//! This library implements streaming owoification.
+//!
+//! Get the binary on [Crates.io](https://crates.io/crates/wustc)!
+
+
 use std::io::{Result as IoResult, Write, Read};
 
 
