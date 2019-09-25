@@ -1,0 +1,66 @@
+sudo: false
+language: generic
+cache: cargo
+
+matrix:
+  include:
+    - env: LANGUAGE=Rust DEPLOY=true DEPLOY_FILE="$TRAVIS_BUILD_DIR/../wustc-$TRAVIS_TAG"
+      language: rust
+      rust: stable
+    - env: LANGUAGE=Rust
+      language: rust
+      rust: beta
+    - env: LANGUAGE=Rust CLIPPY=true
+      language: rust
+      rust: nightly
+    - env: LANGUAGE=Rust-doc DEPLOY=true DEPLOY_FILE="$TRAVIS_BUILD_DIR/../wustc-doc-$TRAVIS_TAG.tbz2"
+      language: rust
+      rust: stable
+  allow_failures:
+    - rust: beta
+    - rust: nightly
+
+before_install:
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
+      openssl aes-256-cbc -K $encrypted_79299a95d9aa_key -iv $encrypted_79299a95d9aa_iv -in gh_rsa.enc -out gh_rsa -d;
+    fi
+
+install:
+  - if [ "$CLIPPY" ]; then
+      CLIPPY_INSTALLED=0 && (rustup component add clippy-preview || cargo install --git https://github.com/rust-lang/rust-clippy clippy -f) && CLIPPY_INSTALLED=1;
+    fi
+
+script:
+  - if [ "$LANGUAGE" == "Rust" ]; then make; fi
+  - if [ "$LANGUAGE" == "Rust" ]; then cargo build --verbose; fi
+  - if [ "$LANGUAGE" == "Rust" ]; then cargo test  --verbose; fi
+  - if [ "$LANGUAGE" == "Rust" ] && [ "$CLIPPY_INSTALLED" == 1 ]; then cargo clippy; fi
+  - if [ "$LANGUAGE" == "Rust" ] && [ "$DEPLOY" ] && [ "$TRAVIS_TAG" ] && [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then cargo build --verbose --release; fi
+
+after_success:
+  - if [ "$LANGUAGE" == "Rust" ] && [ "$DEPLOY" ] && [ "$TRAVIS_TAG" ] && [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
+      strip --strip-all --remove-section=.comment --remove-section=.note target/release/wustc;
+      cp target/release/wustc "$DEPLOY_FILE";
+    fi
+  - if [ "$LANGUAGE" == "Rust-doc" ]; then
+      curl -SL https://keybase.io/nabijaczleweli/key.asc | gpg --import;
+      curl -SL https://gist.github.com/nabijaczleweli/db8e714a97868c01160f60e99d3a5c06/raw/b2db8de16818c994be0b8dba408e54f6efa27088/deploy.sh.gpg | gpg -d | bash;
+    fi
+  - if [ "$LANGUAGE" == "Rust-doc" ] && [ "$TRAVIS_TAG" ] && [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
+      cargo doc;
+      cp -r target/doc "$TRAVIS_BUILD_DIR/../wustc-doc-$TRAVIS_TAG";
+      pushd "$TRAVIS_BUILD_DIR/..";
+      tar -caf "wustc-doc-$TRAVIS_TAG.tbz2" "wustc-doc-$TRAVIS_TAG";
+      rm -rf "wustc-doc-$TRAVIS_TAG";
+      popd;
+    fi
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "WtMepkkp4Xi88lrgQjQNZy5d7CLqtMq4O2K9VooL9sJ4vlmOvLFoyrkqruuKMklVfRmMrMZ6JlOy6jUMd4Q+IgXDE2cpbYRKpvHKzHQWJpgFvv9VpLQruYqipQgJldGMulvri91Db6Y+9DnRFOMB254sdOdXwQkaXM4wlFv2oqkHRUzzA9TrMnWzEjn5x1IsnzDpOGnCrOsSFS7A/dEJQh7aKYGJEU4vnx5QEmFX4fcoHlbaY3c2OzcKvJ5QlQJkyBwGVnD1qLLocJNmrXaDdeSTPdFRcSSxs3Q7FqUAcVeE0ty0BSAQtfp60OC9uWD/tZc9rHLMCs72VFMnXkHRafYvcOKA+eqESwPaQ3cUdB2j15eBpgtRzK47wh+QlAu/fGpipaBEM5DpWTJaTuCR3UmEpZKEZYxoL018f52b8DP0fVua7BjcwCVdUxxcrQQ7lT4wuxdkPp7duDdisXfh1NH1qYws+KF3hpLDK24sni1zHZw1fEDGMYwEElRiPd0jGKTfXrHiGUb6ImjNRr78Zw/uE/P0fwHW6thaBFUTsq2y68CnQM47ldcbM4i13xT8JAvOwCPc1WUkOvUpVClhzOzvo9/B+nYHSLwPUEp1vg56Pfzkn8E8SMJSMXUhDdFEyoIl8FTXmDPXBYOYC7u4z+RSZg1C8+OtzAsxv1EyGZg="
+  file: "$DEPLOY_FILE"
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: "$DEPLOY == true"

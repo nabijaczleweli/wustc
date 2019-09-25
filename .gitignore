@@ -1,0 +1,17 @@
+*
+!.git*
+!.git*/**
+!.travis.yml
+!gh_rsa.enc
+!appveyor.yml
+!LICENSE
+!build.rs
+!Cargo.toml
+!rustfmt.toml
+!*.sublime-project
+!*.md
+!*.rc
+!src
+!src/**
+!tests
+!tests/**
